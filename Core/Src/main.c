@@ -39,6 +39,7 @@
 #include "higrometer.h"
 #include "cfg.h"
 #include "waterer_math.h"
+#include "command.h"
 
 /* USER CODE END Includes */
 
@@ -137,6 +138,7 @@ int main(void)
 	HigroInit(&hadc1);
 
 	Cfg_Init();
+	Communication_Init();
 
 	display.ch1LowNew = GetCh1_LowCalibVal();
 	display.ch1HighNew = GetCh1_HighCalibVal();
