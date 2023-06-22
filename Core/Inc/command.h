@@ -10,9 +10,13 @@
 
 #define  UART_BUF_SIZE 20
 
+#include "main.h"
+
 
 
 void Communication_Init(void);
+void Register_MsgComplited_Callback(void (*funcTmp)(uint8_t *msg, size_t len));
+
 
 
 #endif /* COMMAND_H_ */
