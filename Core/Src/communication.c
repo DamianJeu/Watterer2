@@ -13,51 +13,48 @@
 #include "stdio.h"
 #include "stm32f1xx_hal_def.h"
 
-char firstMSG[]="Higro,Temp,HigroStatus";
-char secondMSG[]="CH1,CH2";
+
 
 
 
 void ESP_New_Message(uint8_t *msg, size_t len)
 {
 	char *allocatedMemory;
+	char *allMsg1;
 	char *token;
 
-	uint8_t cnt=1;
+	uint8_t cnt = 1;
+	uint8_t lenIn = 0;
 
 	allocatedMemory = malloc(len * sizeof(char));
 
 	memcpy(allocatedMemory, msg, len);
 
-	char firstMsgPart[20];
-	char secondMsgPart[20];
-	char thirdMsgPart[20];
-
+//	char firstMsgPart[20];
+//	char secondMsgPart[20];
+//	char thirdMsgPart[20];
 
 	token = strtok(allocatedMemory, "_");
-	memcpy(firstMsgPart, token, strlen(token));
+	lenIn = strlen(token);
+
+	/************************************/
+
+	allMsg1= malloc(lenIn*sizeof(char));
+
+	memcpy(allMsg1, token, strlen(token));
 
 	while(token!=NULL)
 	{
 		token = strtok(NULL, "_");
+		lenIn = strlen(token);
+		allMsg1= malloc(lenIn*sizeof(char));
+		memcpy(allMsg1, token, strlen(token));
 
-		if(cnt==1)
-		{
-			memcpy(secondMsgPart, token, strlen(token));
-		}
-		else if(cnt==2)
-		{
-			memcpy(thirdMsgPart, token, strlen(token));
-		}
-		else
-		{
-			//error
-			break;
-		}
-		cnt++;
+
 	}
 
-	//if()
+
+
 
 
 	free(allocatedMemory);
