@@ -13,157 +13,119 @@
 #include "stdio.h"
 #include "stm32f1xx_hal_def.h"
 
-char commandBuffer1[] = "Higro,Temp,HigroST";
-char commandBuffer2[] = "CH1,CH2";
-char commandBuffer3[] = "?";
+static uint8_t msgData[4];
+static uint8_t sndMsg[9];
+static uint8_t recMsg;
 
-typedef enum
+enum
 {
-	Error = -1, Higro, Temp, HigroST
+	FromEsp = 'E',
+	FromStm = 'S',
+	Higro = 'H',
+	Temperature = 'T',
+	HigroStatus = 'A',
+	Error = 'e',
+	Value = 'V'
+};
 
-} First_Message_E;
-
-typedef enum
-{
-	CH1, CH2
-} Second_Message_E;
-
-typedef enum
-{
-	REQ
-
-} Third_Message_E;
-
-/*************FRAME*************/
-/******* COMMAND_CHANEL ********/
-
-uint8_t Check_Command(char *command, char *buffer)
-{
-	char *token;
-	uint8_t index = 0;
-
-	token = strtok(buffer, ",");
-
-	if (!strcmp(token, command))
-	{
-		return 0;
-	}
-
-	while (token != NULL)
-	{
-		token = strtok(NULL, ",");
-		index++;
-		if (!strcmp(token, command))
-		{
-			return index;
-		}
-
-	}
-	//command not recognized
-	return -1;
-}
-
-void Command_Handling(First_Message_E firstMsg, Second_Message_E secondMsg,
-		Third_Message_E thirdMsg)
+void ESP_New_Message(uint8_t *msg)
 {
 
-	if (firstMsg == Higro)
-	{
-		if (secondMsg == CH1)
-		{
-			Send_Uart_Msg("CH1_VALUE_H");
-		}
-		else if (secondMsg == CH2)
-		{
-			Send_Uart_Msg("CH2_VALUE_H");
-		}
-		else
-		{
-			Send_Uart_Msg("Higro CH Error");
-		}
-	}
-	else if (firstMsg == Temp)
-	{
-		if (secondMsg == CH1)
-		{
-			Send_Uart_Msg("CH1_VALUE_T");
-		}
-		else if (secondMsg == CH2)
-		{
-			Send_Uart_Msg("CH2_VALUE_T");
-		}
-		else
-		{
-			Send_Uart_Msg("Temp CH Error");
-		}
-	}
-	else if (firstMsg == HigroST)
-	{
-		if (secondMsg == CH1)
-		{
-			Send_Uart_Msg("CH1_VALUE_OK");
-		}
-		else if (secondMsg == CH2)
-		{
-			Send_Uart_Msg("CH2_VALUE_OK");
-		}
-		else
-		{
-			Send_Uart_Msg("HigroST CH Error");
-		}
-	}
+	memcpy(msgData, msg, 4);
+	recMsg = 1;
 
 }
 
-void ESP_New_Message(uint8_t *msg, size_t len)
+void Create_Msg_ToSend(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+		char *value)
 {
-	char *token;
-	uint8_t cnt = 0;
 
-	First_Message_E firstMsg = Error;
-	Second_Message_E secondMsg = Error;
-	Third_Message_E thirdMsg = Error;
+	sndMsg[0] = b1;
+	sndMsg[1] = b2;
+	sndMsg[2] = b3;
+	sndMsg[3] = b4;
+	sprintf((char*) (sndMsg + 4), "%s", value);
+	Send_Uart_Msg(sndMsg, 9);
 
-	int16_t msgBuf[3];
+}
 
-	token = strtok((char*) msg, "_");
-	msgBuf[0] = Check_Command(token, commandBuffer1);
+void ESP_Msg_Handling(void)
+{
 
-	if (msgBuf[0] != Error)
+	if (recMsg)
 	{
-		while (token != NULL)
-		{
-			cnt += 1;
-			token = strtok(NULL, "_");
 
-			if (cnt < 3)
+		if (msgData[0] == FromEsp)
+		{
+
+			if (msgData[1] == Higro)
 			{
-				if (cnt == 1)
+				if (msgData[2] == '1')
 				{
-					msgBuf[cnt] = Check_Command(token, commandBuffer2);
+					Create_Msg_ToSend(FromStm, Higro, '1', Value, "1000");
+
+				}
+				else if (msgData[2] == '2')
+				{
+					Create_Msg_ToSend(FromStm, Higro, '2', Value, "5000");
+
 				}
 				else
 				{
-					msgBuf[cnt] = Check_Command(token, commandBuffer3);
+					//Error
+					Create_Msg_ToSend(FromStm, Higro, Error, Error, "eeee");
+
 				}
-
 			}
-			else
+			else if (msgData[1] == Temperature)
 			{
-				break;
+				if (msgData[2] == '1')
+				{
+					Create_Msg_ToSend(FromStm, Temperature, '1', Value, "0020");
+
+				}
+				else if (msgData[2] == '2')
+				{
+					Create_Msg_ToSend(FromStm, Temperature, '2', Value, "0030");
+
+				}
+				else
+				{
+					//Error
+					Create_Msg_ToSend(FromStm, Temperature, Error, Error,
+							"eeee");
+
+				}
+			}
+			else if (msgData[1] == HigroStatus)
+			{
+				if (msgData[2] == '1')
+				{
+					Create_Msg_ToSend(FromStm, HigroStatus, '1', Value, "BAD");
+
+				}
+				else if (msgData[2] == '2')
+				{
+					Create_Msg_ToSend(FromStm, HigroStatus, '2', Value, "OK");
+
+				}
+				else
+				{
+					//Error
+					Create_Msg_ToSend(FromStm, HigroStatus, Error, Error,
+							"eeee");
+
+				}
 			}
 
 		}
-
-		firstMsg = msg[0];
-		secondMsg = msg[1];
-		thirdMsg = msg[2];
-
-		if (secondMsg != -1 && thirdMsg != -1)
+		else
 		{
-			Command_Handling(firstMsg, secondMsg, thirdMsg);
+			Create_Msg_ToSend(FromStm, Error, Error, Error, "eeee");
+			Send_Uart_Msg(sndMsg, 9);
 		}
 
+		recMsg = 0;
 	}
 
 }

@@ -40,6 +40,7 @@
 #include "cfg.h"
 #include "waterer_math.h"
 #include "command.h"
+#include "communication.h"
 
 /* USER CODE END Includes */
 
@@ -137,8 +138,9 @@ int main(void)
 	TIM_CHANNEL_ALL, &softTimer2);
 	HigroInit(&hadc1);
 
-	Cfg_Init();
+//	Cfg_Init();
 	Communication_Init();
+	Register_MsgComplited_Callback(ESP_New_Message);
 
 	display.ch1LowNew = GetCh1_LowCalibVal();
 	display.ch1HighNew = GetCh1_HighCalibVal();
@@ -165,6 +167,7 @@ int main(void)
 
 		HigroMeasure();
 		Encoder_Event(&enco);
+		ESP_Msg_Handling();
 
 		raw1 = Get_Data_CH1();
 		raw2 = Get_Data_CH2();

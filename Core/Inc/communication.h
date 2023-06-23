@@ -9,6 +9,7 @@
 #define INC_COMMUNICATION_H_
 
 
-
+void ESP_New_Message(uint8_t *msg);
+void ESP_Msg_Handling(void);
 
 #endif /* INC_COMMUNICATION_H_ */
