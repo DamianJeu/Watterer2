@@ -15,6 +15,8 @@
 #include "string.h"
 #include "stm32f1xx_hal_def.h"
 
+#define UART_INSTANCE huart1
+
 uint8_t uartBuffer[UART_BUF_SIZE];
 uint8_t uartChar;
 
@@ -28,7 +30,7 @@ void Register_MsgComplited_Callback(void (*funcTmp)(uint8_t *msg, size_t len)) {
 
 void Communication_Init(void) {
 
-	HAL_UART_Receive_IT(&huart1, &uartChar, 1);
+	HAL_UART_Receive_IT(&UART_INSTANCE, &uartChar, 1);
 
 }
 
@@ -38,6 +40,18 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
 		UNUSED(huart);
 	}
+
+}
+
+void Send_Uart_Msg(char * msg)
+{
+
+	uint16_t len;
+
+	len=strlen(msg);
+
+	HAL_UART_Transmit_IT(&UART_INSTANCE, (uint8_t*) msg, len);
+
 
 }
 
@@ -63,11 +77,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			if (func != NULL) {
 				func(uartBuffer, strlen((char*) uartBuffer));
 			}
-			HAL_UART_Transmit_IT(&huart1, (uint8_t*) "OK!", 4);
+			HAL_UART_Transmit_IT(&UART_INSTANCE, (uint8_t*) "OK!", 4);
 
 		}
 
-		HAL_UART_Receive_IT(&huart1, &uartChar, 1);
+		HAL_UART_Receive_IT(&UART_INSTANCE, &uartChar, 1);
 
 	}
 

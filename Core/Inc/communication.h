@@ -9,14 +9,6 @@
 #define INC_COMMUNICATION_H_
 
 
-typedef enum
-{
-	Higro,
-	Temp,
-	HigroStatus
-
-
-}First_Message_E;
 
 
 #endif /* INC_COMMUNICATION_H_ */

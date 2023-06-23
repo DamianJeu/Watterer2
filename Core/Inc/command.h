@@ -16,6 +16,7 @@
 
 void Communication_Init(void);
 void Register_MsgComplited_Callback(void (*funcTmp)(uint8_t *msg, size_t len));
+void Send_Uart_Msg(char * msg);
 
 
 
