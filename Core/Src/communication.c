@@ -13,37 +13,69 @@
 #include "stdio.h"
 #include "stm32f1xx_hal_def.h"
 
-static uint8_t msgData[4];
 static uint8_t sndMsg[9];
 static uint8_t recMsg;
 
-enum
+
+typedef enum
 {
-	FromEsp = 'E',
-	FromStm = 'S',
-	Higro = 'H',
-	Temperature = 'T',
-	HigroStatus = 'A',
-	Error = 'e',
-	Value = 'V'
-};
+	FromEsp = 'E', FromStm = 'S'
+
+} Device_E;
+
+typedef enum
+{
+	Higro = 'H', Temperature = 'T', HigroStatus = 'A'
+
+} Function_E;
+
+typedef enum
+{
+	Error = 'e', Value = 'V'
+} Parameter_E;
+
+typedef struct
+{
+
+	Device_E Device;
+	Function_E Function;
+	Parameter_E Channel;
+	uint8_t Additional;
+
+} FromEsp_Frame_T;
+
+typedef struct
+{
+	FromEsp_Frame_T basicData;
+	char value[5];
+
+} FromStm_Frame_T;
+
+
+FromEsp_Frame_T receivedFrame;
+FromStm_Frame_T frameToSend;
+
+
 
 void ESP_New_Message(uint8_t *msg)
 {
 
-	memcpy(msgData, msg, 4);
+	FromEsp_Frame_T *espFramePtr = &receivedFrame;
+	memcpy(espFramePtr, msg, 4);
 	recMsg = 1;
 
 }
 
-void Create_Msg_ToSend(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+void Create_Msg_ToSend(Device_E b1, Function_E b2, Parameter_E b3, uint8_t b4,
 		char *value)
 {
 
-	sndMsg[0] = b1;
-	sndMsg[1] = b2;
-	sndMsg[2] = b3;
-	sndMsg[3] = b4;
+	uint8_t *bufPtr = sndMsg;
+
+	*bufPtr = b1;
+	*(bufPtr + 1) = b2;
+	*(bufPtr + 2) = b3;
+	*(bufPtr + 3) = b4;
 	sprintf((char*) (sndMsg + 4), "%s", value);
 	Send_Uart_Msg(sndMsg, 9);
 
@@ -55,17 +87,17 @@ void ESP_Msg_Handling(void)
 	if (recMsg)
 	{
 
-		if (msgData[0] == FromEsp)
+		if (receivedFrame.Device == FromEsp)
 		{
 
-			if (msgData[1] == Higro)
+			if (receivedFrame.Function == Higro)
 			{
-				if (msgData[2] == '1')
+				if (receivedFrame.Channel == '1')
 				{
 					Create_Msg_ToSend(FromStm, Higro, '1', Value, "1000");
 
 				}
-				else if (msgData[2] == '2')
+				else if (receivedFrame.Channel == '2')
 				{
 					Create_Msg_ToSend(FromStm, Higro, '2', Value, "5000");
 
@@ -77,14 +109,14 @@ void ESP_Msg_Handling(void)
 
 				}
 			}
-			else if (msgData[1] == Temperature)
+			else if (receivedFrame.Function == Temperature)
 			{
-				if (msgData[2] == '1')
+				if (receivedFrame.Channel == '1')
 				{
 					Create_Msg_ToSend(FromStm, Temperature, '1', Value, "0020");
 
 				}
-				else if (msgData[2] == '2')
+				else if (receivedFrame.Channel == '2')
 				{
 					Create_Msg_ToSend(FromStm, Temperature, '2', Value, "0030");
 
@@ -97,14 +129,14 @@ void ESP_Msg_Handling(void)
 
 				}
 			}
-			else if (msgData[1] == HigroStatus)
+			else if (receivedFrame.Function == HigroStatus)
 			{
-				if (msgData[2] == '1')
+				if (receivedFrame.Channel == '1')
 				{
 					Create_Msg_ToSend(FromStm, HigroStatus, '1', Value, "BAD");
 
 				}
-				else if (msgData[2] == '2')
+				else if (receivedFrame.Channel == '2')
 				{
 					Create_Msg_ToSend(FromStm, HigroStatus, '2', Value, "OK");
 

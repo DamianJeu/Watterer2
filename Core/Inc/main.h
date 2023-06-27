@@ -76,8 +76,8 @@ char* sprintf_v5(char *source, char *txt, uint8_t buf_size, uint8_t zeroEnable,
 #define LED_BLUE_GPIO_Port GPIOB
 #define LED_GREEN_Pin GPIO_PIN_13
 #define LED_GREEN_GPIO_Port GPIOB
-#define LED_RED_Pin GPIO_PIN_14
 #define LED_RED_GPIO_Port GPIOB
+#define LED_RED_Pin GPIO_PIN_14
 #define DS_Pin GPIO_PIN_15
 #define DS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */

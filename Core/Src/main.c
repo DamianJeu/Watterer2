@@ -41,6 +41,7 @@
 #include "waterer_math.h"
 #include "command.h"
 #include "communication.h"
+#include "deviceInfo.h"
 
 /* USER CODE END Includes */
 
@@ -63,19 +64,18 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
-char buf[30];
-uint16_t Ch1, Ch2, raw1, raw2;
-float ch1Volt, ch2Volt;
+char buf[20];
 uint16_t softTimer1, softTimer2;
 uint16_t eepromValue, encoVal = 100;
 int16_t tmpC;
-uint32_t addres;
 uint8_t menuOk;
 
 ds18b20_T ds1;
 oneWire_t oneWire1;
 Encoder_T enco;
+Critical_Data_T deviceData;
+
+
 
 /* USER CODE END PV */
 
@@ -85,7 +85,6 @@ void SystemClock_Config(void);
 
 void EncoINC(void);
 void EncoDEC(void);
-void TogLed(void);
 void Menu_In(void);
 /* USER CODE END PFP */
 
@@ -138,7 +137,7 @@ int main(void)
 	TIM_CHANNEL_ALL, &softTimer2);
 	HigroInit(&hadc1);
 
-//	Cfg_Init();
+	Cfg_Init();
 	Communication_Init();
 	Register_MsgComplited_Callback(ESP_New_Message);
 
@@ -169,11 +168,13 @@ int main(void)
 		Encoder_Event(&enco);
 		ESP_Msg_Handling();
 
-		raw1 = Get_Data_CH1();
-		raw2 = Get_Data_CH2();
 
-		Ch1 = Calibration(GetCh1_LowCalibVal(), GetCh1_HighCalibVal(), raw1);
-		Ch2 = Calibration(GetCh2_LowCalibVal(), GetCh2_HighCalibVal(), raw2);
+		deviceData.ch1Raw = Get_Data_CH1();
+		deviceData.ch2Raw = Get_Data_CH2();
+		deviceData.ch1Higro = Calibration(GetCh1_LowCalibVal(), GetCh1_HighCalibVal(), deviceData.ch1Raw);
+		deviceData.ch2Higro = Calibration(GetCh2_LowCalibVal(), GetCh2_HighCalibVal(), deviceData.ch2Raw);
+		Device_Higro_OK(&deviceData, LED_RED_GPIO_Port, LED_GREEN_GPIO_Port, LED_RED_Pin, LED_GREEN_Pin);
+
 
 		if (!softTimer1)
 		{
@@ -181,10 +182,10 @@ int main(void)
 			if (menuOk & (1 << 0))
 			{
 
-				display.ch1Low = Ch1;
-				display.ch2Low = Ch2;
-				display.ch1rawVal = raw1;
-				display.ch2rawVal = raw2;
+				display.ch1Low = deviceData.ch1Higro;
+				display.ch2Low = deviceData.ch2Higro;
+				display.ch1rawVal = deviceData.ch1Raw;
+				display.ch2rawVal = deviceData.ch2Raw;
 				Menu_Refresh();
 
 				if (!(menuOk & (1 << 1)))
@@ -205,20 +206,15 @@ int main(void)
 				SSD1306_Puts(buf, &Font_7x10, 1);
 
 				SSD1306_GotoXY(0, 10);
-				sprintf_v5(buf, "CH0:^% ,CH1:^%      ", sizeof(buf), 0, Ch1,
-						Ch2);
+				sprintf_v5(buf, "CH0:^% ,CH1:^%      ", sizeof(buf), 0, deviceData.ch1Higro,
+						deviceData.ch2Higro);
 				SSD1306_Puts(buf, &Font_7x10, 1);
 
-				SSD1306_DrawFilledRectangle(0, 20, 120, 10, 0);
-				SSD1306_DrawFilledRectangle(0, 20, Ch1, 10, 1);
+				SSD1306_DrawFilledRectangle(0, 30, 120, 10, 0);
+				SSD1306_DrawFilledRectangle(0, 30, deviceData.ch1Higro, 10, 1);
 
-				SSD1306_DrawFilledRectangle(0, 40, 120, 10, 0);
-				SSD1306_DrawFilledRectangle(0, 40, Ch2, 10, 1);
-
-				SSD1306_GotoXY(0, 52);
-				sprintf_v5(buf, "EEPROM=^, EN:^  ", sizeof(buf), 0, eepromValue,
-						encoVal);
-				SSD1306_Puts(buf, &Font_7x10, 1);
+				SSD1306_DrawFilledRectangle(0, 50, 120, 10, 0);
+				SSD1306_DrawFilledRectangle(0, 50, deviceData.ch2Higro, 10, 1);
 
 				ds18b20_start_measure(&ds1);
 				ds18b20_get_temp(&ds1, &tmpC, NULL);
@@ -376,12 +372,7 @@ void EncoDEC(void)
 		encoVal--;
 }
 
-void ToggLed(void)
-{
 
-	HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin);
-
-}
 
 /* USER CODE END 4 */
 
