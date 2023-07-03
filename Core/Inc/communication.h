@@ -8,8 +8,10 @@
 #ifndef INC_COMMUNICATION_H_
 #define INC_COMMUNICATION_H_
 
+#include "deviceInfo.h"
 
+
+void ESP_Msg_Handling(Critical_Data_T *data);
 void ESP_New_Message(uint8_t *msg);
-void ESP_Msg_Handling(void);
 
 #endif /* INC_COMMUNICATION_H_ */

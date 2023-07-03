@@ -21,7 +21,7 @@ void Device_Higro_OK(Critical_Data_T *ptr, GPIO_TypeDef *LD1, GPIO_TypeDef *LD2,
 {
 
 	ptr->ch1HigroOk = ((ptr->ch1Higro) < GetCh1_TooDryVal()) ? 0 : 1;
-	ptr->ch2HigroOK = ((ptr->ch2Higro) < GetCh2_TooDryVal()) ? 0 : 1;
+	ptr->ch2HigroOk = ((ptr->ch2Higro) < GetCh2_TooDryVal()) ? 0 : 1;
 
 	if ((GetCh1_TooDryVal() > ptr->ch1Higro)
 			|| (GetCh2_TooDryVal() > ptr->ch2Higro))

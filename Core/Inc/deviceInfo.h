@@ -17,7 +17,7 @@ typedef struct
 	uint16_t ch1Higro;
 	uint16_t ch2Higro;
 	uint8_t ch1HigroOk;
-	uint8_t ch2HigroOK;
+	uint8_t ch2HigroOk;
 	int16_t temp;
 
 }Critical_Data_T;

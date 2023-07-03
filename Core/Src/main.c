@@ -54,6 +54,7 @@
 /* USER CODE BEGIN PD */
 #define SEPARATOR '^'
 #define ZERO_SING '@'
+#define OLED_CLEAN 50000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -65,7 +66,7 @@
 
 /* USER CODE BEGIN PV */
 char buf[20];
-uint16_t softTimer1, softTimer2;
+uint16_t softTimer1, softTimer2, softTimer3;
 uint16_t eepromValue, encoVal = 100;
 int16_t tmpC;
 uint8_t menuOk;
@@ -74,8 +75,6 @@ ds18b20_T ds1;
 oneWire_t oneWire1;
 Encoder_T enco;
 Critical_Data_T deviceData;
-
-
 
 /* USER CODE END PV */
 
@@ -153,6 +152,7 @@ int main(void)
 	ds18b20_init(&ds1, &oneWire1);
 	ds18b20_read_address(&ds1);
 	menuOk = 0;
+	softTimer3 = OLED_CLEAN;
 
 	/* USER CODE END 2 */
 
@@ -166,20 +166,18 @@ int main(void)
 
 		HigroMeasure();
 		Encoder_Event(&enco);
-		ESP_Msg_Handling();
-
-
-		deviceData.ch1Raw = Get_Data_CH1();
-		deviceData.ch2Raw = Get_Data_CH2();
-		deviceData.ch1Higro = Calibration(GetCh1_LowCalibVal(), GetCh1_HighCalibVal(), deviceData.ch1Raw);
-		deviceData.ch2Higro = Calibration(GetCh2_LowCalibVal(), GetCh2_HighCalibVal(), deviceData.ch2Raw);
-		Device_Higro_OK(&deviceData, LED_RED_GPIO_Port, LED_GREEN_GPIO_Port, LED_RED_Pin, LED_GREEN_Pin);
-
 
 		if (!softTimer1)
 		{
+
+			if (!softTimer3)
+			{
+				SSD1306_Clear();
+
+			}
+
 			/*MENU SCREEN DISPLAY*/
-			if (menuOk & (1 << 0))
+			if (menuOk & (1 << 0) && softTimer3)
 			{
 
 				display.ch1Low = deviceData.ch1Higro;
@@ -198,16 +196,17 @@ int main(void)
 
 			}
 			/*MAIN SCREEN DISPLAY*/
-			else if (!(menuOk & (1 << 0)))
+			else if (!(menuOk & (1 << 0)) && softTimer3 )
 			{
 
 				SSD1306_GotoXY(0, 0);
-				sprintf_v5(buf, "Temp:^C  ", sizeof(buf), 0, tmpC);
+				sprintf_v5(buf, "Temp:^C s:^", sizeof(buf), 0, tmpC,
+						softTimer3);
 				SSD1306_Puts(buf, &Font_7x10, 1);
 
 				SSD1306_GotoXY(0, 10);
-				sprintf_v5(buf, "CH0:^% ,CH1:^%      ", sizeof(buf), 0, deviceData.ch1Higro,
-						deviceData.ch2Higro);
+				sprintf_v5(buf, "CH0:^% ,CH1:^%      ", sizeof(buf), 0,
+						deviceData.ch1Higro, deviceData.ch2Higro);
 				SSD1306_Puts(buf, &Font_7x10, 1);
 
 				SSD1306_DrawFilledRectangle(0, 30, 120, 10, 0);
@@ -232,6 +231,18 @@ int main(void)
 
 			softTimer1 = 33;
 		}
+
+		deviceData.ch1Raw = Get_Data_CH1();
+		deviceData.ch2Raw = Get_Data_CH2();
+		deviceData.ch1Higro = Calibration(GetCh1_LowCalibVal(),
+				GetCh1_HighCalibVal(), deviceData.ch1Raw);
+		deviceData.ch2Higro = Calibration(GetCh2_LowCalibVal(),
+				GetCh2_HighCalibVal(), deviceData.ch2Raw);
+		deviceData.temp = tmpC;
+		Device_Higro_OK(&deviceData, LED_RED_GPIO_Port, LED_GREEN_GPIO_Port,
+				LED_RED_Pin, LED_GREEN_Pin);
+
+		ESP_Msg_Handling(&deviceData);
 
 	}
 	/* USER CODE END 3 */
@@ -301,11 +312,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (softTimer2)
 		softTimer2--;
 
+	if (softTimer3)
+	{
+		softTimer3--;
+	}
+
 }
 
 void Menu_In(void)
 {
 	menuOk |= (1 << 0);
+	softTimer3 = OLED_CLEAN;
 }
 
 char* sprintf_v5(char *source, char *txt, uint8_t buf_size, uint8_t zeroEnable,
@@ -364,15 +381,15 @@ char* sprintf_v5(char *source, char *txt, uint8_t buf_size, uint8_t zeroEnable,
 void EncoINC(void)
 {
 	encoVal++;
+	softTimer3 = OLED_CLEAN;
 }
 
 void EncoDEC(void)
 {
 	if (encoVal)
 		encoVal--;
+	softTimer3 = OLED_CLEAN;
 }
-
-
 
 /* USER CODE END 4 */
 

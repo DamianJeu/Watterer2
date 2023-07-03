@@ -12,10 +12,10 @@
 #include "string.h"
 #include "stdio.h"
 #include "stm32f1xx_hal_def.h"
+#include "deviceInfo.h"
 
 static uint8_t sndMsg[9];
 static uint8_t recMsg;
-
 
 typedef enum
 {
@@ -51,11 +51,8 @@ typedef struct
 
 } FromStm_Frame_T;
 
-
 FromEsp_Frame_T receivedFrame;
 FromStm_Frame_T frameToSend;
-
-
 
 void ESP_New_Message(uint8_t *msg)
 {
@@ -81,8 +78,10 @@ void Create_Msg_ToSend(Device_E b1, Function_E b2, Parameter_E b3, uint8_t b4,
 
 }
 
-void ESP_Msg_Handling(void)
+void ESP_Msg_Handling(Critical_Data_T *data)
 {
+
+	char textbuf[10];
 
 	if (recMsg)
 	{
@@ -94,12 +93,14 @@ void ESP_Msg_Handling(void)
 			{
 				if (receivedFrame.Channel == '1')
 				{
-					Create_Msg_ToSend(FromStm, Higro, '1', Value, "1000");
+					sprintf(textbuf, "%.3d", data->ch1Higro);
+					Create_Msg_ToSend(FromStm, Higro, '1', Value, textbuf);
 
 				}
 				else if (receivedFrame.Channel == '2')
 				{
-					Create_Msg_ToSend(FromStm, Higro, '2', Value, "5000");
+					sprintf(textbuf, "%.3d", data->ch2Higro);
+					Create_Msg_ToSend(FromStm, Higro, '2', Value, textbuf);
 
 				}
 				else
@@ -113,12 +114,14 @@ void ESP_Msg_Handling(void)
 			{
 				if (receivedFrame.Channel == '1')
 				{
-					Create_Msg_ToSend(FromStm, Temperature, '1', Value, "0020");
+					sprintf(textbuf, "%.3d", data->temp);
+					Create_Msg_ToSend(FromStm, Temperature, '1', Value,
+							textbuf);
 
 				}
 				else if (receivedFrame.Channel == '2')
 				{
-					Create_Msg_ToSend(FromStm, Temperature, '2', Value, "0030");
+					Create_Msg_ToSend(FromStm, Temperature, '2', Value, "none");
 
 				}
 				else
@@ -133,11 +136,20 @@ void ESP_Msg_Handling(void)
 			{
 				if (receivedFrame.Channel == '1')
 				{
+					if (data->ch1HigroOk)
+						memcpy(textbuf, "OK  ", 5);
+					else
+						memcpy(textbuf, "BAD ",5);
+
 					Create_Msg_ToSend(FromStm, HigroStatus, '1', Value, "BAD");
 
 				}
 				else if (receivedFrame.Channel == '2')
 				{
+					if (data->ch2HigroOk)
+						memcpy(textbuf, "OK  ",5);
+					else
+						memcpy(textbuf, "BAD ",5);
 					Create_Msg_ToSend(FromStm, HigroStatus, '2', Value, "OK");
 
 				}
