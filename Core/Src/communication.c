@@ -13,6 +13,7 @@
 #include "stdio.h"
 #include "stm32f1xx_hal_def.h"
 #include "deviceInfo.h"
+#include "cfg.h"
 
 static uint8_t sndMsg[9];
 static uint8_t recMsg;
@@ -25,7 +26,7 @@ typedef enum
 
 typedef enum
 {
-	Higro = 'H', Temperature = 'T', HigroStatus = 'A'
+	Higro = 'H', Temperature = 'T', HigroStatus = 'A', PumpForce = 'P'
 
 } Function_E;
 
@@ -76,12 +77,15 @@ void Create_Msg_ToSend(Device_E b1, Function_E b2, Parameter_E b3, uint8_t b4,
 	sprintf((char*) (sndMsg + 4), "%s", value);
 	Send_Uart_Msg(sndMsg, 9);
 
+
 }
 
 void ESP_Msg_Handling(Critical_Data_T *data)
 {
 
 	char textbuf[10];
+	static T_pumpStatus lastPumpStatus;
+	T_pumpStatus pumpStatus;
 
 	if (recMsg)
 	{
@@ -139,7 +143,7 @@ void ESP_Msg_Handling(Critical_Data_T *data)
 					if (data->ch1HigroOk)
 						memcpy(textbuf, "OK  ", 5);
 					else
-						memcpy(textbuf, "BAD ",5);
+						memcpy(textbuf, "BAD ", 5);
 
 					Create_Msg_ToSend(FromStm, HigroStatus, '1', Value, "BAD");
 
@@ -147,9 +151,9 @@ void ESP_Msg_Handling(Critical_Data_T *data)
 				else if (receivedFrame.Channel == '2')
 				{
 					if (data->ch2HigroOk)
-						memcpy(textbuf, "OK  ",5);
+						memcpy(textbuf, "OK  ", 5);
 					else
-						memcpy(textbuf, "BAD ",5);
+						memcpy(textbuf, "BAD ", 5);
 					Create_Msg_ToSend(FromStm, HigroStatus, '2', Value, "OK");
 
 				}
@@ -165,11 +169,22 @@ void ESP_Msg_Handling(Critical_Data_T *data)
 		}
 		else
 		{
+			//static T_pumpStatus lastPumpStatus;
 			Create_Msg_ToSend(FromStm, Error, Error, Error, "eeee");
-			Send_Uart_Msg(sndMsg, 9);
 		}
 
 		recMsg = 0;
 	}
+
+
+	pumpStatus = Get_PumpStatus();
+	if (pumpStatus != lastPumpStatus)
+	{
+		sprintf(textbuf, "%.1d", pumpStatus);
+		Create_Msg_ToSend(FromStm, PumpForce, '!', Value, textbuf);
+		lastPumpStatus=pumpStatus;
+	}
+
+	memset(textbuf,0,9);
 
 }
