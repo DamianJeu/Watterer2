@@ -147,12 +147,13 @@ int main(void)
 	display.ch1TooDry = GetCh1_TooDryVal();
 	display.ch2TooDry = GetCh2_TooDryVal();
 	display.displayTime = GetDisp_TimeONOFF();
+	//SetDisp_TimeONOFF(50000);
 
 	wire_init(&oneWire1, &htim2, DS_GPIO_Port, DS_Pin);
 	ds18b20_init(&ds1, &oneWire1);
 	ds18b20_read_address(&ds1);
 	menuOk = 0;
-	softTimer3 = OLED_CLEAN;
+	softTimer3 = display.displayTime;
 
 	/* USER CODE END 2 */
 
@@ -194,13 +195,15 @@ int main(void)
 					menuOk &= ~(1 << 2);
 				}
 
+				softTimer3 = display.displayTime;
+
 			}
 			/*MAIN SCREEN DISPLAY*/
-			else if (!(menuOk & (1 << 0)) && softTimer3 )
+			else if (!(menuOk & (1 << 0)) && softTimer3)
 			{
 
 				SSD1306_GotoXY(0, 0);
-				sprintf_v5(buf, "Temp:^C s:^", sizeof(buf), 0, tmpC,
+				sprintf_v5(buf, "Temp:^C s:^ ", sizeof(buf), 0, tmpC,
 						softTimer3);
 				SSD1306_Puts(buf, &Font_7x10, 1);
 
@@ -240,7 +243,7 @@ int main(void)
 				GetCh2_HighCalibVal(), deviceData.ch2Raw);
 		deviceData.temp = tmpC;
 		Device_Higro_OK(&deviceData, LED_RED_GPIO_Port, LED_GREEN_GPIO_Port,
-				LED_RED_Pin, LED_GREEN_Pin);
+		LED_RED_Pin, LED_GREEN_Pin);
 
 		ESP_Msg_Handling(&deviceData);
 
@@ -322,7 +325,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Menu_In(void)
 {
 	menuOk |= (1 << 0);
-	softTimer3 = OLED_CLEAN;
+	softTimer3 = GetDisp_TimeONOFF();
 }
 
 char* sprintf_v5(char *source, char *txt, uint8_t buf_size, uint8_t zeroEnable,
@@ -381,14 +384,14 @@ char* sprintf_v5(char *source, char *txt, uint8_t buf_size, uint8_t zeroEnable,
 void EncoINC(void)
 {
 	encoVal++;
-	softTimer3 = OLED_CLEAN;
+	softTimer3 = GetDisp_TimeONOFF();
 }
 
 void EncoDEC(void)
 {
 	if (encoVal)
 		encoVal--;
-	softTimer3 = OLED_CLEAN;
+	softTimer3 = GetDisp_TimeONOFF();
 }
 
 /* USER CODE END 4 */

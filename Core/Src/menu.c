@@ -84,7 +84,7 @@ menu_t sub_menu2_EXIT =
 menu_t menu3 =
 { "DISPLAY", 0, NULL, &menu4, &menu2, &sub_menu3_DISP_OFF, NULL, NULL };
 menu_t sub_menu3_DISP_OFF =
-{ "ON/OFF:", 1, &display.displayTime, &sub_menu3_DISP_EXIT,
+{ "ON/OFF:", 1, &(display.displayTime), &sub_menu3_DISP_EXIT,
 		&sub_menu3_DISP_EXIT, NULL, &menu3, Change_DisplayONOFF };
 menu_t sub_menu3_DISP_EXIT =
 { "EXIT", 0, NULL, NULL, &sub_menu3_DISP_OFF, NULL, &menu3, Menu_Back };

@@ -133,7 +133,10 @@ static void CH2_TooDryValDown(void)
 static void DisplayONOFFUp(void)
 {
 	uint16_t temp = GetDisp_TimeONOFF();
-	temp++;
+	if (temp < 65000)
+		temp += 1000;
+	else
+		temp = 1000;
 	SetDisp_TimeONOFF(temp);
 	display.displayTime = temp;
 }
@@ -141,8 +144,8 @@ static void DisplayONOFFUp(void)
 static void DisplayONOFFDown(void)
 {
 	uint16_t temp = GetDisp_TimeONOFF();
-	if (temp)
-		temp--;
+	if (temp > 1000)
+		temp -= 1000;
 	SetDisp_TimeONOFF(temp);
 	display.displayTime = temp;
 }
